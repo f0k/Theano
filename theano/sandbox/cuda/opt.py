@@ -114,6 +114,18 @@ cpu_ops_moved_to_gpu = [
     tensor.IncSubtensor, tensor.Shape, tensor.Join,
     tensor.Alloc, tensor.Eye]
 
+# Helper function that removes additional broadcastable dimensions discovered
+# during an optimization.
+def fix_broadcasts(new_output, old_output):
+    old_bcast = old_output.type.broadcastable
+    new_bcast = new_output.type.broadcastable
+    if new_bcast != old_bcast:
+        # check that we did not try discarding a broadcastable dimension
+        assert not any(b_old and not b_new for b_old, b_new in zip(
+                old_bcast, new_bcast))
+        # force old broadcasting pattern; we must not change it here
+        new_output = tensor.patternbroadcast(new_output, old_bcast)
+    return new_output
 
 class InputToGpuOptimizer(Optimizer):
     """

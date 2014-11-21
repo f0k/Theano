@@ -14,7 +14,7 @@ from theano.sandbox.cuda.basic_ops import (as_cuda_ndarray_variable,
 from theano.sandbox.cuda.blas import (GpuConv, GpuDownsampleFactorMax,
                                       GpuDownsampleFactorMaxGrad)
 from theano.sandbox.cuda.nnet import GpuSoftmax
-from theano.sandbox.cuda.opt import register_opt
+from theano.sandbox.cuda.opt import register_opt, fix_broadcasts
 
 from theano.sandbox.cuda.nvcc_compiler import NVCC_compiler
 
@@ -1194,9 +1194,10 @@ if cuda_available:
             border_mode = node.op.border_mode
             subsample = node.op.subsample
             direction_hint = node.op.direction_hint
-            return [dnn_conv(img, kern,
-                             border_mode=border_mode, subsample=subsample,
-                             direction_hint=direction_hint)]
+            result = dnn_conv(img, kern,
+                              border_mode=border_mode, subsample=subsample,
+                              direction_hint=direction_hint)
+            return [fix_broadcasts(result, node.outputs[0])]
 
 # DISABLED as there is problems in the handling of borders
 #    @register_opt('cudnn')
